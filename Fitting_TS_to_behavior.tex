@@ -1,0 +1,56 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[skins]{tcolorbox}
+\title{Fitting TS to behavior}
+
+
+\begin{document}
+\begin{section}*{Fitting Thompson Sampling to Behavior}
+\subsection*{Data}
+${\bf x} = \{x_1, x_2, \cdots, x_T \}$ \\
+${\bf r} = \{r_1, r_2, \cdots, r_T \}$ \\
+
+
+\subsection*{Initialize}
+${\bf \alpha}^{(0)} = \{\alpha^{(0)}_1, \cdots,  \alpha^{(0)}_K\}$ \\
+${\bf \beta}^{(0)} = \{\beta^{(0)}_1, \cdots,  \beta^{(0)}_K\}$ \\
+
+\subsection*{Environment + Hyperparameters}
+$K :=$ \# of arms \\ 
+$N :=$ \# of posterior samples \\ 
+$\gamma_\alpha := \alpha$ learning rate \\
+$\gamma_\beta := \beta$ learning rate \\
+
+\subsection*{Model Fitting Procedure}
+   \begin{tcolorbox}[title= Thompson Sampling]
+\noindent For $t \in [1, T]$:
+    \begin{enumerate}
+        \item Estimate $p(x_t | \alpha^{(t - 1)}, \beta^{(t - 1)})$
+        \begin{enumerate}
+            \item For $n \in [1, N]$:
+                \begin{enumerate}
+                    \item For $k \in [1, K]$:
+                    \begin{enumerate}
+                        \item sample $b_k^{(n)} = {\rm Beta}(\alpha^{(t-1)}_k,\beta^{(t - 1)}_k)$ 
+                    \end{enumerate}
+                    \item $\hat{x}_t^{(n)} = \arg\max_{k \in [1, K]} b_k^{(n)}$
+                \end{enumerate}
+            \item $p(x_t | \alpha^{(t - 1)}, \beta^{(t - 1)}) \approx  \frac{1}{N}\sum_{n = 1}^N \mathbb{I}(\hat{x}_t^{(n)} = x_t)$
+        \end{enumerate}
+        \item Append the loss $\mathcal{L}_t = -\log p(x_t | \alpha^{(t - 1)}, \beta^{(t - 1)})$
+
+        \item Update parameters of the beta distribution:
+        \begin{enumerate}
+            \item $\alpha^{(t)}_{x_t} \leftarrow \alpha^{(t-1)}_{x_t} + \gamma_\alpha r_t$
+            \item $\beta^{(t)}_{x_t} \leftarrow \beta^{(t-1)}_{x_t} + \gamma_\beta (1 - r_t)$
+        \end{enumerate}
+        
+    \end{enumerate}
+\end{tcolorbox}
+
+\end{section}
+
+
+\end{document}

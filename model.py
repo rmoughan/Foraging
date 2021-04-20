@@ -70,6 +70,81 @@ class ThompsonSampler:
         self.b[x_t] = self.b[x_t] + self.lr[1]*(1 - r_t)
         return
 
+    
+class UCBer:
+    def __init__(self, K, x, r, delta, beta=0.5):
+        """
+        :param K: (int) number of arms
+        :param x  (ndarray: [T,]): history of choices
+        :param r  (ndarray: [T,]): history of rewards
+        :param delta: (float) UCB param
+        :param beta: (float) temperature parameter
+        """
+        self.K = K
+        self.beta = beta
+        self.delta = delta
+
+        self.x = x
+        self.r = r
+
+        # track rewards + pulls
+        self.accumulated_reward = np.zeros([self.K, ])
+        self.accumulated_pulls = np.zeros([self.K, ])
+
+        # init history trackers
+        self.UCB_history = []
+        self.prob_history = []
+        self.loss_history = []
+
+    def fit(self):
+        """
+        dummy call
+        """
+        for t in range(len(self.x)):
+            self.step(t)
+        return
+
+    def step(self, t):
+        """
+        - calculate UCB, append to history
+        - Get choice probabilities
+        - Update model loss
+        """
+
+        UCB = self.UCB()
+        choice_prob = np.exp(self.beta*UCB)/np.sum(np.exp(self.beta*UCB))
+        self.prob_history.append(choice_prob)
+        self.loss_history.append(1 - (choice_prob[self.x[t]]))
+        self.update(self.r[t], self.x[t])
+        return
+
+    def UCB(self):
+        """
+        Calculate UCB
+        :return: UCB estimate
+        """
+        # the specialized divide call returns zero when the denominator is zero
+        avg_reward = np.divide(self.accumulated_reward, self.accumulated_pulls,
+                               out=np.zeros_like(self.accumulated_reward), where=(self.accumulated_pulls != 0))
+        upper_bound = np.sqrt(
+            np.divide(
+                np.ones_like(self.accumulated_reward)*2*np.log(1/self.delta),
+                self.accumulated_pulls,
+                out=np.zeros_like(self.accumulated_reward),
+                where=(self.accumulated_pulls != 0)
+            )
+        )
+        return avg_reward + upper_bound
+
+    def update(self, reward, arm):
+        """
+        Update the reward + pull trackers
+        :param reward: reward instance
+        :param arm: arm that resulted in the reward
+        """
+        self.accumulated_pulls[arm] += 1
+        self.accumulated_reward[arm] += reward
+
 
 if __name__ == "__main__":
     import inspect
